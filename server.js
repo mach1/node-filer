@@ -24,13 +24,17 @@ export default class PeerServer {
   }
 
   handleData(data) {
-    if (data.toString() === 'LIST') {
+    const dataStr = data.toString();
+    console.log('Recieved data:' + dataStr);
+
+    if (dataStr === 'LIST') {
       fs.readdir('data/out', function(err, files) {
-        this.socket.write(files.toString());
+        this.socket.write('LIST:' + files.toString());
       }.bind(this));
-    } else if (data.toString().indexOf('GET_FILE') === 0) {
+    } else if (dataStr.indexOf('GET_FILE') === 0) {
+      let fileName = dataStr.substring(9);
       this.socket.write('FILE');
-      var fileStream = fs.createReadStream('data/out/test.txt');
+      var fileStream = fs.createReadStream('data/out/' + fileName);
       fileStream.pipe(this.socket);
     }
   }

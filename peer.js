@@ -12,11 +12,20 @@ export default class Peer {
   }
 
   handleData(data) {
-    console.log('Recieved data');
+    const dataStr = data.toString();
+    console.log('Recieved data:' + dataStr);
 
-    console.log('Data: ', data.toString());
-    var fileStream = fs.createWriteStream('data/in/test.txt');
-    fileStream.write(data);
+    if (dataStr.indexOf('LIST:') === 0) {
+      let files = dataStr.substring(5).split(',');
+      let socket = this.socket;
+
+      files.forEach(function(file) {
+        socket.write('GET_FILE:' + file);
+      });
+    } else if (dataStr.indexOf('FILE') === 0) {
+      var fileStream = fs.createWriteStream('data/in/test.txt');
+      fileStream.write(dataStr);
+    }
   }
 
   handlePeerConnection() {
