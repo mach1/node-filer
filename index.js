@@ -59,10 +59,9 @@ function saveNewFiles() {
 
 const watcher = chokidar.watch('data')
 
-
 authenticate().then(() => {
-  //watcher.on('add', path => fileAdded(path))
   saveNewFiles().then(() => {
     console.log('all saved')
+    watcher.on('add', path => fileAdded(path))
   })
 })
