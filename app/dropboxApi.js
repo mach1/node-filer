@@ -1,5 +1,14 @@
 import Dropbox from 'dropbox'
 import dropboxAuth from '../dropbox-auth.json'
+import Promise from 'bluebird'
+
+let _client;
+
+const checkClient = function() {
+  if (!_client) {
+    throw new Error('Not authenticated!');
+  }
+}
 
 const showError = function(error) {
   switch (error.status) {
@@ -40,23 +49,37 @@ const showError = function(error) {
 };
 
 export function authenticate() {
-  const client = new Dropbox.Client(dropboxAuth)
+  return new Promise((resolve, reject) => {
+    _client = new Dropbox.Client(dropboxAuth)
 
-  client.authDriver(new Dropbox.AuthDriver.NodeServer(8191))
+    _client.authDriver(new Dropbox.AuthDriver.NodeServer(8191))
 
-  client.authenticate(function(error, client) {
-    if (error) {
-      // Replace with a call to your own error-handling code.
+    _client.authenticate(function(error, client) {
+      if (error) {
+        // Replace with a call to your own error-handling code.
+        //
+        // Don't forget to return from the callback, so you don't execute the code
+        // that assumes everything went well.
+        reject(error)
+        return showError(error);
+      }
+
+      // Replace with a call to your own application code.
       //
-      // Don't forget to return from the callback, so you don't execute the code
-      // that assumes everything went well.
-      return showError(error);
-    }
+      // The user authorized your app, and everything went well.
+      // client is a Dropbox.Client instance that you can use to make API calls.
+      console.log('Authentication successful!')
+      resolve()
+    });
+  });
+}
 
-    // Replace with a call to your own application code.
-    //
-    // The user authorized your app, and everything went well.
-    // client is a Dropbox.Client instance that you can use to make API calls.
-    console.log('Authentication successful!')
+export function saveFile(fileName, data) {
+  _client.writeFile(fileName, data, function(error, stat) {
+    if (error) {
+      return console.log(error);
+    }
+    // The image has been succesfully written.
+    console.log(`${fileName} saved!`);
   });
 }
