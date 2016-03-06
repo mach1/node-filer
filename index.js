@@ -15,7 +15,7 @@ function fileAdded(path) {
 }
 
 
-const watcher = chokidar.watch('data/in')
+const watcher = chokidar.watch('data')
 const log = console.log.bind(console)
 
 
