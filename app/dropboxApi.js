@@ -83,3 +83,16 @@ export function saveFile(fileName, data) {
     console.log(`${fileName} saved!`);
   });
 }
+
+export function getFiles(path) {
+  return new Promise((resolve, reject) => {
+    _client.readdir(path, function(error, entries) {
+      if (error) {
+        reject(error)
+        return showError(error);  // Something went wrong.
+      }
+
+      resolve(entries)
+    });
+  })
+}
