@@ -75,13 +75,17 @@ export function authenticate() {
 }
 
 export function saveFile(fileName, data) {
-  _client.writeFile(fileName, data, function(error, stat) {
-    if (error) {
-      return console.log(error);
-    }
-    // The image has been succesfully written.
-    console.log(`${fileName} saved!`);
-  });
+  return new Promise((resolve, reject) => {
+    _client.writeFile(fileName, data, function(error, stat) {
+      if (error) {
+        reject(error)
+        return console.log(error);
+      }
+      // The image has been succesfully written.
+      console.log(`${fileName} saved!`);
+      resolve()
+    });
+  })
 }
 
 export function getFiles(path) {
