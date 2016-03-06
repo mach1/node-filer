@@ -1,5 +1,5 @@
 import chokidar from 'chokidar'
-import { authenticate, saveFile, getFiles } from './app/dropboxApi.js'
+import { authenticate, saveFile, getFiles, readFile } from './app/dropboxApi.js'
 import Promise from 'bluebird'
 import fs from 'fs'
 import path from 'path'
@@ -39,7 +39,24 @@ function saveFileIfNeeded(dropboxFiles, localFile) {
   })
 }
 
-function saveNewFiles() {
+function downloadFileIfNeeded(localFiles, dropboxFile) {
+  return new Promise((resolve, reject) => {
+    if (localFiles.indexOf(dropboxFile) === -1) {
+      readFile(path.join(DATA_DIR,  dropboxFile)).then((data) => {
+        fs.writeFile(path.join(LOCAL_DATA_DIR, dropboxFile), data, (err) => {
+          if (err) {
+            throw new Error('Failed to save: ' + dropboxFile)
+            reject(err)
+          }
+        })
+      }, reject)
+    } else {
+      reject()
+    }
+  })
+}
+
+function syncFiles() {
   return new Promise((resolve, reject) => {
     getFiles(DATA_DIR).then((dropboxFiles) => {
       fs.readdir(LOCAL_DATA_DIR, (err, localFiles) => {
@@ -48,19 +65,26 @@ function saveNewFiles() {
           throw new Error('Failed to load local data dir', err)
         }
 
-        const promises = localFiles.map((localFile) => {
+        const localFilePromises = localFiles.map((localFile) => {
           return saveFileIfNeeded(dropboxFiles, localFile)
         })
+
+        const dropboxFilePromises = dropboxFiles.map((dropboxFile) => {
+          return downloadFileIfNeeded(localFiles, dropboxFile)
+        })
+
+        const promises = localFilePromises.concat(dropboxFilePromises)
+
         Promise.all(promises).then(resolve)
       })
-    }, reject)  
+    }, reject)
   })
 }
 
 const watcher = chokidar.watch('data')
 
 authenticate().then(() => {
-  saveNewFiles().then(() => {
+  syncFiles().then(() => {
     console.log('all saved')
     watcher.on('add', path => fileAdded(path))
   })
