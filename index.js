@@ -3,6 +3,7 @@ import { authenticate, saveFile, getFiles, readFile } from './app/dropboxApi.js'
 import Promise from 'bluebird'
 import fs from 'fs'
 import path from 'path'
+import { encrypt, decrypt } from './app/cryptoUtils.js'
 
 const ignoredFiles = ['.DS_Store']
 const DATA_DIR = '/data'
@@ -32,7 +33,7 @@ function saveFileIfNeeded(dropboxFiles, localFile) {
   return new Promise((resolve, reject) => {
     if (shouldSaveFile(dropboxFiles, localFile)) {
       const filePath = path.join(LOCAL_DATA_DIR, localFile)
-      fileAdded(filePath).then(resolve, reject)
+      encrypt(filePath).then(fileAdded).then(resolve, reject)
     } else {
       resolve()
     }
@@ -43,15 +44,18 @@ function downloadFileIfNeeded(localFiles, dropboxFile) {
   return new Promise((resolve, reject) => {
     if (localFiles.indexOf(dropboxFile) === -1) {
       readFile(path.join(DATA_DIR,  dropboxFile)).then((data) => {
-        fs.writeFile(path.join(LOCAL_DATA_DIR, dropboxFile), data, (err) => {
+        const localPath = path.join(LOCAL_DATA_DIR, dropboxFile)
+        fs.writeFile(localPath, data, (err) => {
           if (err) {
             throw new Error('Failed to save: ' + dropboxFile)
             reject(err)
           }
+
+          resolve(localPath)
         })
       }, reject)
     } else {
-      reject()
+      reject('file exists')
     }
   })
 }
@@ -62,7 +66,6 @@ function syncFiles() {
       fs.readdir(LOCAL_DATA_DIR, (err, localFiles) => {
         if (err) {
           reject(err)
-          throw new Error('Failed to load local data dir', err)
         }
 
         const localFilePromises = localFiles.map((localFile) => {
@@ -70,7 +73,11 @@ function syncFiles() {
         })
 
         const dropboxFilePromises = dropboxFiles.map((dropboxFile) => {
-          return downloadFileIfNeeded(localFiles, dropboxFile)
+          return new Promise((resolve, reject) => {
+            downloadFileIfNeeded(localFiles, dropboxFile).then((path) => {
+              decrypt(path).then(resolve, reject)
+            }, reject)
+          })
         })
 
         const promises = localFilePromises.concat(dropboxFilePromises)
@@ -87,5 +94,7 @@ authenticate().then(() => {
   syncFiles().then(() => {
     console.log('all saved')
     watcher.on('add', path => fileAdded(path))
+  }, (e) => {
+    console.log(e)
   })
 })
