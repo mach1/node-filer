@@ -3,7 +3,6 @@ import { authenticate, saveFile, getFiles, readFile } from './app/dropboxApi.js'
 import Promise from 'bluebird'
 import fs from 'fs'
 import path from 'path'
-import { getCipher, getDecipher } from './app/cryptoUtils.js'
 
 const ignoredFiles = ['.DS_Store']
 const DATA_DIR = '/data'
@@ -19,9 +18,7 @@ function fileAdded(path) {
         return handleNodeError(error)
       }
 
-      const cipher = getCipher()
-      const cryptedData = cipher.update(data, 'utf8', 'binary') + cipher.final('binary')
-      saveFile(path, cryptedData).then(resolve, reject)
+      saveFile(path, data).then(resolve, reject)
     })
   })
 }
@@ -46,9 +43,7 @@ function downloadFileIfNeeded(localFiles, dropboxFile) {
   return new Promise((resolve, reject) => {
     if (localFiles.indexOf(dropboxFile) === -1) {
       readFile(path.join(DATA_DIR,  dropboxFile)).then((data) => {
-        const decipher = getDecipher()
-        const decrypted = decipher.update(data, 'binary', 'utf8') + decipher.final('utf8')
-        fs.writeFile(path.join(LOCAL_DATA_DIR, dropboxFile), decrypted, (err) => {
+        fs.writeFile(path.join(LOCAL_DATA_DIR, dropboxFile), data, (err) => {
           if (err) {
             throw new Error('Failed to save: ' + dropboxFile)
             reject(err)
@@ -90,7 +85,7 @@ const watcher = chokidar.watch('data')
 
 authenticate().then(() => {
   syncFiles().then(() => {
-    log('File sync complete')
+    console.log('all saved')
     watcher.on('add', path => fileAdded(path))
   })
 })
