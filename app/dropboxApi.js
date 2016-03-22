@@ -83,7 +83,7 @@ export function saveFile(fileName, data) {
       }
       // The image has been succesfully written.
       console.log(`${fileName} saved!`);
-      resolve()
+      resolve(fileName)
     });
   })
 }

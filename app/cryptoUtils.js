@@ -32,7 +32,7 @@ export function decrypt(filePath) {
       input.pipe(decrypt).pipe(output)
 
       output.on('finish', () => {
-        resolve(resultPath)
+        resolve(filePath)
       })
     } catch (e) {
       console.log(e)

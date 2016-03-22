@@ -24,16 +24,29 @@ function fileAdded(path) {
   })
 }
 
+function removeFile(path) {
+  return new Promise((resolve, reject) => {
+    fs.unlink(path, (err) => {
+      if (err) {
+        reject(err)
+      }
+      resolve()
+    })
+  })
+}
+
 function shouldSaveFile(existingFiles, newFile) {
+  console.log(existingFiles, newFile, `${newFile}.enc`)
   return existingFiles.indexOf(newFile) === -1 &&
-    ignoredFiles.indexOf(newFile) === -1
+    ignoredFiles.indexOf(newFile) === -1 &&
+    existingFiles.indexOf(`${newFile}.enc`) === -1
 }
 
 function saveFileIfNeeded(dropboxFiles, localFile) {
   return new Promise((resolve, reject) => {
     if (shouldSaveFile(dropboxFiles, localFile)) {
       const filePath = path.join(LOCAL_DATA_DIR, localFile)
-      encrypt(filePath).then(fileAdded).then(resolve, reject)
+      encrypt(filePath).then(fileAdded).then(removeFile).then(resolve, reject)
     } else {
       resolve()
     }
@@ -75,7 +88,7 @@ function syncFiles() {
         const dropboxFilePromises = dropboxFiles.map((dropboxFile) => {
           return new Promise((resolve, reject) => {
             downloadFileIfNeeded(localFiles, dropboxFile).then((path) => {
-              decrypt(path).then(resolve, reject)
+              decrypt(path).then(removeFile).then(resolve, reject)
             }, reject)
           })
         })
@@ -93,7 +106,8 @@ const watcher = chokidar.watch('data')
 authenticate().then(() => {
   syncFiles().then(() => {
     console.log('all saved')
-    watcher.on('add', path => fileAdded(path))
+    // TODO: this should check if file should be uploaded first
+    //watcher.on('add', path => fileAdded(path))
   }, (e) => {
     console.log(e)
   })
