@@ -103,7 +103,7 @@ export function getFiles(path) {
 
 export function readFile(path) {
   return new Promise((resolve, reject) => {
-    _client.readFile(path, function(error, data) {
+    _client.readFile(path, { buffer: true }, function(error, data) {
       if (error) {
         reject(error)
         return showError(error);  // Something went wrong.
