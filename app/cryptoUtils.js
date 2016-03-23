@@ -35,7 +35,6 @@ export function decrypt(filePath) {
         resolve(filePath)
       })
     } catch (e) {
-      console.log(e)
       reject(e)
     }
   })

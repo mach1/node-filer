@@ -105,8 +105,7 @@ const watcher = chokidar.watch('data')
 
 authenticate().then(() => {
   syncFiles().then(() => {
-    console.log('all saved')
-    // TODO: this should check if file should be uploaded first
+    console.log('Sync complete')
     //watcher.on('add', path => fileAdded(path))
   }, (e) => {
     console.log(e)
