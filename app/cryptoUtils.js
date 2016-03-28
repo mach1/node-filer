@@ -4,38 +4,37 @@ import fs from 'fs'
 const algorithm = 'aes-256-ctr'
 const password = 'd6F3Efeq'
 
-export function encrypt(filePath) {
+function transformFile(inputPath, outputPath, transformation) {
   return new Promise((resolve, reject) => {
     try {
-      const resultPath = `${filePath}.enc`
-      const encrypt = crypto.createCipher(algorithm, password);
-      const input = fs.createReadStream(filePath)
-      const output = fs.createWriteStream(resultPath)
-      input.pipe(encrypt).pipe(output)
-
-      output.on('finish', () => {
-        resolve(resultPath)
-      })
+      const input = fs.createReadStream(inputPath)
+      const output = fs.createWriteStream(outputPath)
+      input.pipe(transformation).pipe(output)
+      output.on('finish', resolve)
     } catch (e) {
       reject(e)
     }
   })
 }
 
+export function encrypt(filePath) {
+  return new Promise((resolve, reject) => {
+    const resultPath = `${filePath}.enc`
+    const encrypt = crypto.createCipher(algorithm, password);
+
+    return transformFile(filePath, resultPath, encrypt).then(() => {
+      resolve(resultPath)
+    })
+  })
+}
+
 export function decrypt(filePath) {
   return new Promise((resolve, reject) => {
-    try {
-      const resultPath = filePath.substring(0, filePath.length - 4)
-      const decrypt = crypto.createDecipher(algorithm, password);
-      const input = fs.createReadStream(filePath)
-      const output = fs.createWriteStream(resultPath)
-      input.pipe(decrypt).pipe(output)
+    const resultPath = filePath.substring(0, filePath.length - 4)
+    const decrypt = crypto.createDecipher(algorithm, password);
 
-      output.on('finish', () => {
-        resolve(filePath)
-      })
-    } catch (e) {
-      reject(e)
-    }
+    return transformFile(filePath, resultPath, decrypt).then(() => {
+      resolve(filePath)
+    })
   })
 }
