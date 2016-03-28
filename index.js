@@ -27,16 +27,14 @@ function fileAdded(path) {
 function removeFile(path) {
   return new Promise((resolve, reject) => {
     fs.unlink(path, (err) => {
-      if (err) {
-        reject(err)
-      }
+      if (err) reject(err)
+
       resolve()
     })
   })
 }
 
 function shouldSaveFile(existingFiles, newFile) {
-  console.log(existingFiles, newFile, `${newFile}.enc`)
   return existingFiles.indexOf(newFile) === -1 &&
     ignoredFiles.indexOf(newFile) === -1 &&
     existingFiles.indexOf(`${newFile}.enc`) === -1
@@ -59,10 +57,7 @@ function downloadFileIfNeeded(localFiles, dropboxFile) {
       readFile(path.join(DATA_DIR,  dropboxFile)).then((data) => {
         const localPath = path.join(LOCAL_DATA_DIR, dropboxFile)
         fs.writeFile(localPath, data, (err) => {
-          if (err) {
-            throw new Error('Failed to save: ' + dropboxFile)
-            reject(err)
-          }
+          if (err) reject(err)
 
           resolve(localPath)
         })
@@ -77,9 +72,7 @@ function syncFiles() {
   return new Promise((resolve, reject) => {
     getFiles(DATA_DIR).then((dropboxFiles) => {
       fs.readdir(LOCAL_DATA_DIR, (err, localFiles) => {
-        if (err) {
-          reject(err)
-        }
+        if (err) reject(err)
 
         const localFilePromises = localFiles.map((localFile) => {
           return saveFileIfNeeded(dropboxFiles, localFile)
@@ -107,7 +100,5 @@ authenticate().then(() => {
   syncFiles().then(() => {
     console.log('Sync complete')
     //watcher.on('add', path => fileAdded(path))
-  }, (e) => {
-    console.log(e)
-  })
+  }, log)
 })
